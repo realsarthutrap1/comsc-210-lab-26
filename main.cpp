@@ -167,15 +167,15 @@ void accumulate_times(long long timings[SLICES][EVENTS][CONTAINERS]) {
 }
 
 void print_results(const long long timings[SLICES][EVENTS][CONTAINERS]) {
-    cout << "Completed simulations: " << SIMULATIONS << "\n";
-    cout << "Current run and accumulated times (nanoseconds)\n";
+    const string operations[EVENTS] = {"Read", "Sort", "Insert", "Delete"};
+    cout << "Number of simulations: " << SIMULATIONS << "\n";
+    cout << right << setw(12) << "Operation" << setw(16) << "Vector"
+         << setw(16) << "List" << setw(16) << "Set" << endl;
     for (int event = 0; event < EVENTS; ++event) {
-        cout << "Event " << event << " current:";
+        cout << setw(12) << operations[event];
         for (int container = 0; container < CONTAINERS; ++container)
-            cout << ' ' << timings[CURRENT][event][container];
-        cout << " totals:";
-        for (int container = 0; container < CONTAINERS; ++container)
-            cout << ' ' << timings[TOTALS][event][container];
+            cout << setw(16) << timings[TOTALS][event][container] / SIMULATIONS;
         cout << endl;
     }
+    cout << "Average times in nanoseconds\n";
 }
