@@ -1,4 +1,4 @@
-// COMSC-210 | Lab 25 | Sarthak Pani
+// COMSC-210 | Lab 26 | Sarthak Pani
 // adapted from the instructor race starter and chrono demo
 
 #include <iostream>
@@ -41,9 +41,9 @@ int main() {
 
     try {
         RaceResult reading{"Reading", 0, 0, 0};
-        reading.vector_time = read_codes(vector_codes, "codes.txt");
-        reading.list_time = read_codes(list_codes, "codes.txt");
-        reading.set_time = read_codes(set_codes, "codes.txt");
+        reading.vector_time = read_codes(vector_codes, "names.txt");
+        reading.list_time = read_codes(list_codes, "names.txt");
+        reading.set_time = read_codes(set_codes, "names.txt");
         results.push_back(reading);
         results.push_back(sort_codes(vector_codes, list_codes));
         results.push_back(insert_codes(vector_codes, list_codes, set_codes));
