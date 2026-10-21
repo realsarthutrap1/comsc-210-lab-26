@@ -15,6 +15,9 @@
 using namespace std;
 using namespace std::chrono;
 
+const int SIMULATIONS = 15, SLICES = 2, EVENTS = 4, CONTAINERS = 3;
+const int CURRENT = 0, TOTALS = 1;
+
 struct RaceResult {
     string operation;
     long long vector_time;
@@ -31,24 +34,21 @@ template <typename Container>
 long long delete_middle(Container& codes);
 RaceResult delete_codes(vector<string>& vector_codes, list<string>& list_codes,
                         set<string>& set_codes);
-void print_results(const vector<RaceResult>& results);
+void run_simulation(long long current[EVENTS][CONTAINERS]);
+void accumulate_times(long long timings[SLICES][EVENTS][CONTAINERS]);
+void print_results(const long long timings[SLICES][EVENTS][CONTAINERS]);
 
 int main() {
-    vector<string> vector_codes;
-    list<string> list_codes;
-    set<string> set_codes;
-    vector<RaceResult> results;
+    // slice 0 holds the current run and slice 1 holds running totals
+    // rows are read, sort, insert, delete and columns are vector, list, set
+    long long timings[SLICES][EVENTS][CONTAINERS]{};
 
     try {
-        RaceResult reading{"Reading", 0, 0, 0};
-        reading.vector_time = read_codes(vector_codes, "names.txt");
-        reading.list_time = read_codes(list_codes, "names.txt");
-        reading.set_time = read_codes(set_codes, "names.txt");
-        results.push_back(reading);
-        results.push_back(sort_codes(vector_codes, list_codes));
-        results.push_back(insert_codes(vector_codes, list_codes, set_codes));
-        results.push_back(delete_codes(vector_codes, list_codes, set_codes));
-        print_results(results);
+        for (int run = 0; run < SIMULATIONS; ++run) {
+            run_simulation(timings[CURRENT]);
+            accumulate_times(timings);
+        }
+        print_results(timings);
     } catch (const runtime_error& error) {
         cerr << error.what() << endl;
         return 1;
@@ -79,8 +79,8 @@ long long read_codes(Container& codes, const string& filename) {
 }
 
 RaceResult sort_codes(vector<string>& vector_codes, list<string>& list_codes) {
-    // a set is already sorted so its sorting time stays at -1
-    RaceResult sorting{"Sorting", 0, 0, -1};
+    // a set is already sorted so its sorting time stays at zero
+    RaceResult sorting{"Sorting", 0, 0, 0};
     auto start = steady_clock::now();
     sort(vector_codes.begin(), vector_codes.end());
     auto end = steady_clock::now();
@@ -136,14 +136,46 @@ RaceResult delete_codes(vector<string>& vector_codes, list<string>& list_codes,
     return deleting;
 }
 
-void print_results(const vector<RaceResult>& results) {
-    cout << "Data structure races (nanoseconds)\n";
-    cout << left << setw(16) << "Operation" << right
-         << setw(16) << "Vector" << setw(16) << "List" << setw(16) << "Set" << endl;
-    for (const RaceResult& result : results) {
-        cout << left << setw(16) << result.operation << right
-             << setw(16) << result.vector_time << setw(16) << result.list_time
-             << setw(16) << result.set_time << endl;
+void run_simulation(long long current[EVENTS][CONTAINERS]) {
+    // fresh containers keep earlier runs from changing the next race
+    vector<string> vector_codes;
+    list<string> list_codes;
+    set<string> set_codes;
+    RaceResult reading{"Reading", 0, 0, 0};
+    reading.vector_time = read_codes(vector_codes, "names.txt");
+    reading.list_time = read_codes(list_codes, "names.txt");
+    reading.set_time = read_codes(set_codes, "names.txt");
+    RaceResult races[EVENTS] = {
+        reading,
+        sort_codes(vector_codes, list_codes),
+        insert_codes(vector_codes, list_codes, set_codes),
+        delete_codes(vector_codes, list_codes, set_codes)
+    };
+
+    for (int event = 0; event < EVENTS; ++event) {
+        current[event][0] = races[event].vector_time;
+        current[event][1] = races[event].list_time;
+        current[event][2] = races[event].set_time;
     }
-    cout << "-1 means the set is already sorted\n";
+}
+
+void accumulate_times(long long timings[SLICES][EVENTS][CONTAINERS]) {
+    for (int event = 0; event < EVENTS; ++event) {
+        for (int container = 0; container < CONTAINERS; ++container)
+            timings[TOTALS][event][container] += timings[CURRENT][event][container];
+    }
+}
+
+void print_results(const long long timings[SLICES][EVENTS][CONTAINERS]) {
+    cout << "Completed simulations: " << SIMULATIONS << "\n";
+    cout << "Current run and accumulated times (nanoseconds)\n";
+    for (int event = 0; event < EVENTS; ++event) {
+        cout << "Event " << event << " current:";
+        for (int container = 0; container < CONTAINERS; ++container)
+            cout << ' ' << timings[CURRENT][event][container];
+        cout << " totals:";
+        for (int container = 0; container < CONTAINERS; ++container)
+            cout << ' ' << timings[TOTALS][event][container];
+        cout << endl;
+    }
 }
