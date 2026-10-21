@@ -41,6 +41,7 @@ void print_results(const long long timings[SLICES][EVENTS][CONTAINERS]);
 int main() {
     // slice 0 holds the current run and slice 1 holds running totals
     // rows are read, sort, insert, delete and columns are vector, list, set
+    // totals start at zero once and the current slice is replaced on every run
     long long timings[SLICES][EVENTS][CONTAINERS]{};
 
     try {
@@ -57,6 +58,8 @@ int main() {
     return 0;
 }
 
+// fills an empty container from filename and returns elapsed nanoseconds
+// reports missing, empty, or unreadable input instead of timing partial data
 template <typename Container>
 long long read_codes(Container& codes, const string& filename) {
     ifstream input(filename);
@@ -78,6 +81,7 @@ long long read_codes(Container& codes, const string& filename) {
     return duration_cast<nanoseconds>(end - start).count();
 }
 
+// sorts the supplied vector and list and returns their elapsed times
 RaceResult sort_codes(vector<string>& vector_codes, list<string>& list_codes) {
     // a set is already sorted so its sorting time stays at zero
     RaceResult sorting{"Sorting", 0, 0, 0};
@@ -93,6 +97,7 @@ RaceResult sort_codes(vector<string>& vector_codes, list<string>& list_codes) {
     return sorting;
 }
 
+// inserts one test code into each container and returns three timings
 RaceResult insert_codes(vector<string>& vector_codes, list<string>& list_codes,
                         set<string>& set_codes) {
     RaceResult inserting{"Inserting", 0, 0, 0};
@@ -116,6 +121,7 @@ RaceResult insert_codes(vector<string>& vector_codes, list<string>& list_codes,
     return inserting;
 }
 
+// times locating and erasing the middle element, leaving empty containers alone
 template <typename Container>
 long long delete_middle(Container& codes) {
     auto start = steady_clock::now();
@@ -127,6 +133,7 @@ long long delete_middle(Container& codes) {
     return duration_cast<nanoseconds>(end - start).count();
 }
 
+// updates all three containers and collects their deletion times
 RaceResult delete_codes(vector<string>& vector_codes, list<string>& list_codes,
                         set<string>& set_codes) {
     RaceResult deleting{"Deleting", 0, 0, 0};
@@ -136,6 +143,8 @@ RaceResult delete_codes(vector<string>& vector_codes, list<string>& list_codes,
     return deleting;
 }
 
+// overwrites the current slice with all four races from one complete run
+// local containers release their data when this simulation finishes
 void run_simulation(long long current[EVENTS][CONTAINERS]) {
     // fresh containers keep earlier runs from changing the next race
     vector<string> vector_codes;
@@ -159,6 +168,7 @@ void run_simulation(long long current[EVENTS][CONTAINERS]) {
     }
 }
 
+// adds each current cell to its matching total without changing the current run
 void accumulate_times(long long timings[SLICES][EVENTS][CONTAINERS]) {
     for (int event = 0; event < EVENTS; ++event) {
         for (int container = 0; container < CONTAINERS; ++container)
@@ -166,6 +176,7 @@ void accumulate_times(long long timings[SLICES][EVENTS][CONTAINERS]) {
     }
 }
 
+// reads the totals slice and prints whole nanosecond averages over all runs
 void print_results(const long long timings[SLICES][EVENTS][CONTAINERS]) {
     const string operations[EVENTS] = {"Read", "Sort", "Insert", "Delete"};
     cout << "Number of simulations: " << SIMULATIONS << "\n";
